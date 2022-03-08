@@ -1,4 +1,4 @@
-import { actions, assign, createMachine } from "xstate";
+import { assign, createMachine } from "xstate";
 
 export const services = {
   fetchImageUrl: async () => {
@@ -24,7 +24,7 @@ export const aucImagesMachine = (services: Services) =>
         },
       },
       context: {
-        aucImages: [""],
+        aucImages: [],
         currentIndex: 0,
       },
       initial: "idle",
@@ -72,10 +72,7 @@ export const aucImagesMachine = (services: Services) =>
               ...context,
               currentIndex: 0,
             };
-          } else if (
-            context.currentIndex === 0 &&
-            context.aucImages.length - 1 > 0
-          ) {
+          } else if (context.currentIndex < context.aucImages.length - 1) {
             return {
               ...context,
               currentIndex: context.currentIndex + 1,
@@ -88,10 +85,10 @@ export const aucImagesMachine = (services: Services) =>
         }),
 
         updateCurrentPreviousImage: assign((context) => {
-          if (context.currentIndex === 0 && context.aucImages.length > 0) {
+          if (context.currentIndex === 0) {
             return {
               ...context,
-              currentIndex: context.aucImages.length - 1,
+              currentIndex: 0,
             };
           } else if (context.currentIndex > 0) {
             return {

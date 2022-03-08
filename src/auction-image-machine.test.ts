@@ -1,37 +1,40 @@
-import { interpret, matchState } from "xstate";
+import { interpret } from "xstate";
 import { aucImagesMachine } from "./auction-image-machine";
 
 const services = {
-  fetchImageUrl: async () => [],
+  fetchImageUrl: async () => ["img1", "img2"],
 };
 
-it('should update "aucImages" when the "onDone" event occurs', () => {
-  const expectedValue = 2;
-  const service = interpret(aucImagesMachine(services))
+it('should update "aucImages" when the "onDone" event occurs', (done) => {
+  interpret(aucImagesMachine(services))
     .onTransition((state) => {
       if (state.matches("display")) {
         try {
-          expect(state.context.aucImages.length === expectedValue).toBeTruthy();
-        } catch (e) {}
+          expect(state.value).toBe("display");
+          done();
+        } catch (e) {
+          done(e);
+        }
       }
     })
     .start();
 });
 
-it('should error when the "onError" event occurs', () => {
-  const services = {
+it('should error when the "onError" event occurs', (done) => {
+  const errorServices = {
     fetchImageUrl: async () => {
       throw new Error("An error occurred");
     },
   };
 
-  const actualState = interpret(aucImagesMachine(services))
+  const actualState = interpret(aucImagesMachine(errorServices))
     .onTransition((state) => {
-      if (state.matches("idle")) {
+      if (state.matches("error")) {
         try {
-          expect(actualState.state.matches("display")).toBeTruthy();
+          expect(actualState.state.matches("error")).toBeTruthy();
+          done();
         } catch (e) {
-          console.log(e);
+          done(e);
         }
       }
     })
@@ -39,10 +42,8 @@ it('should error when the "onError" event occurs', () => {
 });
 
 // test transition state
-
 it('should reach "display" given "display" when the "AUCTION_IMG.NEXT_PRESSED" event occurs', () => {
   const expectedValue = "display"; // the expected state value
-
   const actualState = aucImagesMachine(services).transition("display", {
     type: "AUCTION_IMG.NEXT_PRESSED",
   });
@@ -58,7 +59,6 @@ it('should reach "display" given "display" when the "AUCTION_IMG.PREVIOUS_PRESSE
 });
 
 // test context currentIndex change
-
 it('should update "currentIndex" given "display" when the "AUCTION_IMG.NEXT_PRESSED" event occurs', () => {
   const Context = { aucImages: ["0", "1"], currentIndex: 0 };
   const expectedValue = 1;
